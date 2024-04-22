@@ -81,7 +81,7 @@ class db_table:
         query                = "SELECT %s FROM %s" % (columns_query_string, self.name)
         # build where query string
         if where:
-            where_query_string = [ "%s = '%s'" % (k,v) for k,v in where.iteritems() ]
+            where_query_string = [ "%s = '%s'" % (k,v) for k,v in where.items() ]
             query             += " WHERE " + ' AND '.join(where_query_string)
         
         result = []
@@ -139,8 +139,8 @@ class db_table:
     #
     def update(self, values, where):
         # build set & where queries
-        set_query   = ", ".join(["%s = '%s'" % (k,v) for k,v in values.iteritems()])
-        where_query = " AND ".join(["%s = '%s'" % (k,v) for k,v in where.iteritems()])
+        set_query   = ", ".join(["%s = '%s'" % (k,v) for k,v in values.items()])
+        where_query = " AND ".join(["%s = '%s'" % (k,v) for k,v in where.items()])
 
         # UPDATE users SET name = Simon WHERE id = 42
         #
