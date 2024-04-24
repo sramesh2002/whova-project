@@ -1,14 +1,16 @@
 import sys
-from db_table import db_table
 import logging
+from db_table import db_table
 
+# Columns that are expected to be queried
 COLUMNS = ["date", "time_start", "time_end", "title", "location", "description", "speaker"]
 
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def create_table():
     """Create and return a database table object."""
-    logging.info("Creating database table...")
+    logging.info("Creating the 'agendas' table...")
     db = db_table(
         "agendas",
         {
@@ -42,35 +44,36 @@ def format_result(result):
             f"Title: {title}, Location: {location}, Description: {description}, "
             f"{session_type}, Speakers: {speakers}")
 
-
-def fetch_and_print_results(db, where_clause, is_custom=False):
-    """Fetch results based on a where clause and print formatted results."""
-    #logging.info(f"Fetching results with where clause: {where_clause}")
-    results = db.select(where=where_clause)
+def fetch_and_print_results(db, column, value):
+    """Fetch results based on a column and value and print formatted results."""
+    if column == 'speaker':
+        where_clause = f"{column} LIKE '%{value}%'"
+    else:
+        where_clause = {column: value}
+    
+    logging.info(f"Fetching results with where clause: {where_clause}")
+    results = db.select_custom(where=where_clause) if isinstance(where_clause, str) else db.select(where=where_clause)
     for result in results:
         print(format_result(result))
         if result.get("session"):
-            sub_where = {"parent_session": result['id']}
-            #logging.info(f"Fetching sub-session results for session ID {result['id']}")
-            fetch_and_print_results(db, sub_where, is_custom=True)
-
+            fetch_and_print_results(db, "parent_session", result['id'])
 def main():
     if len(sys.argv) < 3:
-        logging.error("Incorrect number of arguments passed!")
+        logging.error("Incorrect number of arguments passed. Usage: <column> <value>")
         print("Usage: <column> <value>")
         return
 
     column = sys.argv[1]
     if column not in COLUMNS:
-        logging.error(f"Invalid column specified: {column}")
-        print("Invalid column")
+        logging.error(f"Invalid column specified: {column}. Valid columns are {COLUMNS}.")
+        print(f"Invalid column. Choose from {COLUMNS}.")
         return
-    
-    value = ' '.join(sys.argv[2:])  # This joins all parts of the value into one string
+
+    # Concatenate all parts of the value to accommodate spaces in inputs like descriptions
+    value = ' '.join(sys.argv[2:])
 
     db = create_table()
-    where = {column: value} if column != "speaker" else f"{column} LIKE '%{value}%'"
-    fetch_and_print_results(db, where)
+    fetch_and_print_results(db, column, value)
 
 if __name__ == "__main__":
     main()
