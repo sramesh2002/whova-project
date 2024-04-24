@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import logging
 from db_table import db_table
