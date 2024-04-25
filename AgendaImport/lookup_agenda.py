@@ -4,15 +4,14 @@ import sys
 import logging
 from db_table import db_table
 
-# Columns that are expected to be queried
+# Define the expected columns for querying the database
 COLUMNS = ["date", "time_start", "time_end", "title", "location", "description", "speaker"]
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 def create_table():
-    """Create and return a database table object."""
-    logging.info("Creating the 'agendas' table...")
+    """
+    Create and return a database table object.
+    Initializes the 'agendas' table with the specified schema in the database.
+    """
     db = db_table(
         "agendas",
         {
@@ -28,11 +27,13 @@ def create_table():
             "speaker": "text",
         }
     )
-    logging.info("Database table created successfully.")
     return db
 
 def format_result(result):
-    """Format database result for printing in a concise format, handling empty values."""
+    """
+    Format a database result for printing.
+    Constructs a user-friendly string representation of a result row, handling any empty fields gracefully.
+    """
     session_type = "Session" if result.get("session") else "Subsession"
     title = result.get('title', 'N/A')
     location = result.get('location', 'N/A')
@@ -47,37 +48,49 @@ def format_result(result):
             f"{session_type}, Speakers: {speakers}")
 
 def fetch_and_print_results(db, column, value):
-    """Fetch results based on a column and value and print formatted results."""
+    """
+    Fetch and print results based on a specified column and value.
+    Executes a database query and prints out the formatted results.
+    Recursively fetches and prints sub-session results if the result has an associated session.
+    """
     if column == 'speaker':
         where_clause = f"{column} LIKE '%{value}%'"
     else:
         where_clause = {column: value}
     
-    logging.info(f"Fetching results with where clause: {where_clause}")
     results = db.select_custom(where=where_clause) if isinstance(where_clause, str) else db.select(where=where_clause)
     for result in results:
         print(format_result(result))
         if result.get("session"):
             fetch_and_print_results(db, "parent_session", result['id'])
+
 def main():
+    """
+    The main function that processes command-line arguments and initiates the database query.
+    It checks for the correct number of arguments and validates the column name.
+    Reads description values from a file if specified, and replaces single quotes with escaped ones for SQL queries.
+    """
+    # Check if the correct number of arguments is passed
     if len(sys.argv) < 3:
-        logging.error("Incorrect number of arguments passed. Usage: <column> <value>")
+        print("Incorrect number of arguments passed. Usage: <column> <value>")
         print("Usage: <column> <value>")
         return
 
+    # Extract column name from the first argument
     column = sys.argv[1]
     if column not in COLUMNS:
-        logging.error(f"Invalid column specified: {column}. Valid columns are {COLUMNS}.")
+        print(f"Invalid column specified: {column}. Valid columns are {COLUMNS}.")
         print(f"Invalid column. Choose from {COLUMNS}.")
         return
 
+    # Handle 'description' column differently by reading from a file
     if column == 'description':
-        filename=' '.join(sys.argv[2:])
+        filename = ' '.join(sys.argv[2:])
         with open(filename, 'r') as file:
-            value=file.read().strip()
-            value=value.replace("'", "''")
+            value = file.read().strip()
+            value = value.replace("'", "''")  # Escape single quotes for SQL query
     else:
-        value = ' '.join(sys.argv[2:])
+        value = ' '.join(sys.argv[2:])  # Join the remaining arguments to form the value
 
     db = create_table()
     fetch_and_print_results(db, column, value)
