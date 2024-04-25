@@ -71,8 +71,13 @@ def main():
         print(f"Invalid column. Choose from {COLUMNS}.")
         return
 
-    # Concatenate all parts of the value to accommodate spaces in inputs like descriptions
-    value = ' '.join(sys.argv[2:])
+    if column == 'description':
+        filename=' '.join(sys.argv[2:])
+        with open(filename, 'r') as file:
+            value=file.read().strip()
+            value=value.replace("'", "''")
+    else:
+        value = ' '.join(sys.argv[2:])
 
     db = create_table()
     fetch_and_print_results(db, column, value)
